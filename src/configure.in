@@ -1,0 +1,120 @@
+dnl -*- sh -*-
+dnl the "configure" script is made from this by running GNU "autoconf"
+dnl
+dnl "$Id: configure.in,v 1.2 2000/06/25 21:41:32 easysw Exp $"
+dnl
+dnl Configuration script for the Fast Light Environment (FLTK).
+dnl
+dnl Copyright 1998-2000 by Bill Spitzak and others.
+dnl
+dnl This is free software; you can redistribute it and/or modify it
+dnl under the terms of the GNU General Public License as published
+dnl by the Free Software Foundation; either version 2 of the
+dnl License, or (at your option) any later version.
+dnl
+dnl This software is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+dnl General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this software; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+dnl USA.
+dnl
+dnl Please report all bugs and problems to "fltk-bugs@fltk.org".
+dnl
+
+dnl Make sure we have the template for the makefile...
+AC_INIT(Makedefs.in)
+AC_CONFIG_HEADER(config.h)
+
+dnl What OS?
+uname=`uname`
+if test "$uname" = "IRIX64"; then
+    uname="IRIX"
+fi
+
+dnl Checks for programs...
+AC_PROG_CC
+AC_PROG_CXX
+AC_PROG_RANLIB
+AC_PATH_PROG(AR,ar)
+AC_PATH_PROG(FLUID,fluid)
+AC_PATH_PROG(HTMLDOC,htmldoc)
+AC_PATH_PROG(RM,rm)
+
+dnl Check for libraries...
+AC_PATH_X
+AC_PATH_XTRA
+if test "$x_libraries" = "/usr/lib"; then
+	echo "Ignoring X library directory \"$x_libraries\" requested by configure."
+	x_libraries="NONE"
+fi
+if test ! "$x_libraries" = "NONE" -a ! "$x_libraries" = ""; then
+	LDFLAGS="$LDFLAGS -L$x_libraries"
+	if test "$uname" = "SunOS"; then
+		LDFLAGS="$LDFLAGS -R$x_libraries"
+	fi
+fi
+if test "$x_includes" = "/usr/include"; then
+	echo "Ignoring X include directory \"$x_includes\" requested by configure."
+	x_includes="NONE"
+fi
+if test ! "$x_includes" = "NONE" -a ! "$x_includes" = ""; then
+	CFLAGS="$CFLAGS -I$x_includes"
+	CXXFLAGS="$CXXFLAGS -I$x_includes"
+fi
+AC_CHECK_LIB(socket,socket,
+if test "$uname" != "IRIX"; then
+	LIBS="-lsocket $LIBS"
+else
+	echo "Not using -lsocket since you are running IRIX."
+fi)
+AC_CHECK_LIB(nsl,gethostbyaddr,
+if test "$uname" != "IRIX"; then
+	LIBS="-lnsl $LIBS"
+else
+	echo "Not using -lnsl since you are running IRIX."
+fi)
+
+AC_CHECK_LIB(m,pow)
+AC_CHECK_LIB(fltk,numericsort)
+AC_CHECK_LIB(Xutf8, XUtf8IsNonSpacing)
+
+dnl add warnings to compiler switches:
+dnl do this last so messing with switches does not break tests
+if test -n "$GXX"; then
+    CFLAGS="-Wall -fno-rtti $CFLAGS"
+    CXXFLAGS="-Wall -Wno-return-type -fno-rtti $CXXFLAGS"
+
+    # See if GCC supports -fno-exceptions...
+    echo "Testing if GCC supports -fno-exceptions..."
+    OLDCFLAGS="$CFLAGS"
+    CFLAGS="$CFLAGS -fno-exceptions"
+    AC_TRY_COMPILE(,,
+	CXXFLAGS="$CXXFLAGS -fno-exceptions"
+	echo "Congratulations - your GCC supports exceptions; disabling them for FLTK...",
+	CFLAGS="$OLDCFLAGS"
+	echo "GCC does not support exceptions...")
+
+    # See if we are running Solaris; if so, try the -fpermissive option...
+    if test $uname = SunOS; then
+	echo "Testing if GCC supports -fpermissive..."
+
+	OLDCFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -fpermissive"
+	AC_TRY_COMPILE(,,
+	    CXXFLAGS="$CXXFLAGS -fpermissive"
+	    echo "Enabling -fpermissive to work around X header bugs...",
+	    CFLAGS="$OLDCFLAGS"
+	    echo "The -fpermissive option is not required by your GCC...")
+    fi
+fi
+
+dnl Output the makefile and configuration file...
+AC_OUTPUT(Makedefs)
+
+dnl
+dnl End of configure script.
+dnl
